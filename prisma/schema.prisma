@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String        @id @default(uuid())
+  email             String        @unique
+  name              String
+  password          String
+  role              Role         @default(USER)
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  reservations      Reservation[] @relation("Organizer")
+}
+
+model Room {
+  id                String        @id @default(uuid())
+  name              String
+  capacity          Int
+  type              RoomType
+  connectedToId     String?
+  connectedTo       Room?        @relation("ConnectedRooms", fields: [connectedToId], references: [id])
+  connectedFrom     Room?        @relation("ConnectedRooms")
+  maintenance       Maintenance?
+  reservations      Reservation[]
+}
+
+model Maintenance {
+  id                String      @id @default(uuid())
+  roomId            String      @unique
+  room              Room        @relation(fields: [roomId], references: [id])
+  reason            String
+  startDate         DateTime
+  endDate           DateTime
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Reservation {
+  id                String      @id @default(uuid())
+  roomId            String
+  room              Room        @relation(fields: [roomId], references: [id])
+  connectedRoomId   String?
+  title             String
+  startTime         DateTime
+  endTime           DateTime
+  actualEndTime     DateTime?
+  organizerId       String
+  organizer         User        @relation("Organizer", fields: [organizerId], references: [id])
+  status            Status      @default(SCHEDULED)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Holiday {
+  id                String      @id @default(uuid())
+  date              DateTime
+  name              String
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum RoomType {
+  SINGLE
+  CONNECTED
+}
+
+enum Status {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
